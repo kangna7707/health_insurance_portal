@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Health Insurance Claims Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Auth Page -->
+<div id="authPage" class="center">
+
+  <!-- Login -->
+  <div class="card" id="loginBox">
+    <h1 class="main-heading">Health Insurance Claims Portal</h1>
+    <h2>Login</h2>
+
+    <input type="text" id="loginUser" placeholder="Username">
+
+    <div class="password-box">
+      <input type="password" id="loginPass" placeholder="Password">
+      <span onclick="togglePassword('loginPass', this)">👁</span>
+    </div>
+
+    <button onclick="login()">Login</button>
+    <p>Don't have an account? <span onclick="showSignup()">Sign up</span></p>
+  </div>
+
+  <!-- Signup -->
+  <div class="card hidden" id="signupBox">
+    <h1 class="main-heading">Health Insurance Claims Portal</h1>
+    <h2>Sign Up</h2>
+
+    <input type="text" id="signupUser" placeholder="Username">
+
+    <div class="password-box">
+      <input type="password" id="signupPass" placeholder="Password">
+      <span onclick="togglePassword('signupPass', this)">👁</span>
+    </div>
+
+    <button onclick="signup()">Create Account</button>
+    <p>Already have an account? <span onclick="showLogin()">Login</span></p>
+  </div>
+
+</div>
+
+<!-- Main App -->
+<div id="app" class="hidden">
+
+  <h1 class="title">Health Insurance Claims Portal</h1>
+
+  <button class="logout" onclick="logout()">Logout</button>
+
+  <!-- Form -->
+  <div class="card">
+    <h2>Submit Claim</h2>
+    <input type="text" id="name" placeholder="Patient Name">
+    <input type="number" id="amount" placeholder="Amount">
+    <input type="text" id="reason" placeholder="Reason">
+    <button onclick="submitClaim()">Submit</button>
+  </div>
+
+  <!-- Claims -->
+  <div class="card">
+    <h2>Your Claims</h2>
+    <div id="claimsList"></div>
+  </div>
+
+</div>
+
+<script>
+let currentUser = localStorage.getItem("currentUser");
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let claims = JSON.parse(localStorage.getItem("claims")) || [];
+
+// Auto login
+if (currentUser) showApp();
+
+function showSignup() {
+  loginBox.classList.add("hidden");
+  signupBox.classList.remove("hidden");
+}
+
+function showLogin() {
+  signupBox.classList.add("hidden");
+  loginBox.classList.remove("hidden");
+}
+
+// Signup
+function signup() {
+  let user = document.getElementById("signupUser").value;
+  let pass = document.getElementById("signupPass").value;
+
+  if (!user || !pass) return alert("Fill all fields");
+
+  if (users[user]) return alert("User already exists");
+
+  users[user] = pass;
+  localStorage.setItem("users", JSON.stringify(users));
+
+  alert("Account created!");
+  showLogin();
+}
+
+// Login
+function login() {
+  let user = document.getElementById("loginUser").value;
+  let pass = document.getElementById("loginPass").value;
+
+  if (users[user] === pass) {
+    localStorage.setItem("currentUser", user);
+    currentUser = user;
+    showApp();
+  } else {
+    alert("Invalid credentials");
+  }
+}
+
+// Logout
+function logout() {
+  localStorage.removeItem("currentUser");
+  location.reload();
+}
+
+function showApp() {
+  document.getElementById("authPage").style.display = "none";
+  document.getElementById("app").classList.remove("hidden");
+  renderClaims();
+}
+
+// Submit claim
+function submitClaim() {
+  let name = document.getElementById("name").value;
+  let amount = document.getElementById("amount").value;
+  let reason = document.getElementById("reason").value;
+
+  if (!name || !amount || !reason) {
+    alert("Fill all fields");
+    return;
+  }
+
+  let claim = {
+    id: Date.now(),
+    user: currentUser,
+    name,
+    amount,
+    reason,
+    status: "Pending"
+  };
+
+  claims.unshift(claim);
+  localStorage.setItem("claims", JSON.stringify(claims));
+  renderClaims();
+}
+
+// Update status
+function updateStatus(id, status) {
+  claims = claims.map(c => c.id === id ? {...c, status} : c);
+  localStorage.setItem("claims", JSON.stringify(claims));
+  renderClaims();
+}
+
+// Render claims
+function renderClaims() {
+  let list = document.getElementById("claimsList");
+  list.innerHTML = "";
+
+  let userClaims = claims.filter(c => c.user === currentUser);
+
+  userClaims.forEach(c => {
+    list.innerHTML += `
+      <div class="claim">
+        <div>
+          <b>${c.name}</b><br>
+          ₹${c.amount} | ${c.reason}<br>
+          <span class="status ${c.status.toLowerCase()}">${c.status}</span>
+        </div>
+        <div>
+          <button class="approve" onclick="updateStatus(${c.id}, 'Approved')">✔</button>
+          <button class="reject" onclick="updateStatus(${c.id}, 'Rejected')">✖</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+// Show/Hide Password
+function togglePassword(id, icon) {
+  const input = document.getElementById(id);
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "🙈";
+  } else {
+    input.type = "password";
+    icon.textContent = "👁";
+  }
+}
+</script>
+
+</body>
+</html>
